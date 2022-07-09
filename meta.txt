@@ -1,0 +1,8 @@
+#cloud-config
+users:
+  - name: sysadmin
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDFaeqemGCwv4VgiWEr4Ljlc+s9BozJSUIlHkmnYFBRo5uNk8qhibML9/q5LYqAhXUmZXw+PjOWOLP9GGyTi6a93qc5/GTuYipgqPAqf/Pc/kw87jm7ePJg4KIrWZ+hbSOguqkYEI9lwEbmaQKItvhp1ormF9df7FIfYGUc7cNJXF2crcrXLdrqFC/AWAfVNzzJUG4AanqGe64aCRnwC4evFOQTckDG2BmSJjCsPCdeL37XNiPT6Q5pTwiF3ani0vz+iM6As880xHOyqiCFDXE3U8PBfqTACzjPdmuYm3jhzLvZiJ0IQQnCT+OY+IW4nVWzucmKmx8KuEv7f3Zgwln1lvE5CwfoovUGf0B2qpOWMd8SZfSxDqcQRUKxNglnxKO2nRbuVTAQGG4HqpFWbqjBfFfeJk8c5vHAmgnTrFU4mF4eUu9bzx/frpZ2S62VxjJH71lBzPP6wGkRZkHm3D/3lQXoD+t5rMn3R6CT7Z72wo98MxVoLVdHWZmxHB60h4c= root@deb11-test50
