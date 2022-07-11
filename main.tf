@@ -1,57 +1,159 @@
-# 07-01
-provider "yandex" {
-  token     = "key.json"
-  cloud_id  = "b1gh06cb9in7v03k56qm"
-  folder_id = "b1ghl566ok47p1fivpn9"
-  zone      = "ru-central1-a"
+# 07-03
+
+terraform {
+  # Moved to ./versions.tf
+  #  required_providers {
+  #    yandex = {
+  #      source = "yandex-cloud/yandex"
+  #    }
+  #  }
+
+  backend "s3" {
+    endpoint = "storage.yandexcloud.net"
+    bucket   = "olekirs-netology"
+    region   = "ru-central1"
+    key      = "[terraform.workspace]/terraform.tfstate"
+
+    # Used \"AWS_ACCESS_KEY_ID\" and \"AWS_SECRET_ACCESS_KEY\" in user ENV
+    #    access_key = "<идентификатор статического ключа>"
+    #    secret_key = "<секретный ключ>"
+
+    skip_region_validation      = true
+    skip_credentials_validation = true
+  }
 }
+
+provider "yandex" {
+#  service_account_key_file = file("key.json")
+  token     = var.yc_token
+  cloud_id  = var.yc_cloud_id
+  zone      = var.yc_region
+}
+
 
 # Networks
+#module "vpc" {
+#  source        = "hamnsk/vpc/yandex"
+#  version       = "0.5.0"
+#  description   = "managed by terraform"
+#  create_folder = length(var.yc_folder_id) > 0 ? false : true
+#  yc_folder_id  = var.yc_folder_id
+#  name          = terraform.workspace
+#  subnets       = local.vpc_subnets[terraform.workspace]
+#}
 
-resource "yandex_vpc_network" "netology_net" {
-  name = "netology_net"
+# Module VPC copyed to local system from https://github.com/hamnsk/terraform-yandex-vpc
+module "vpc" {
+  source  = "./modules/vpc"
+  description = "managed by terraform"
+  create_folder = length(var.yc_folder_id) > 0 ? false : true
+  yc_folder_id = var.yc_folder_id
+  name = terraform.workspace
+  subnets = local.vpc_subnets[terraform.workspace]
 }
 
-resource "yandex_vpc_subnet" "snet_172_17_4_0_22" {
-  name           = "snet_172_17_4_0_22"
-  network_id     = resource.yandex_vpc_network.netology_net.id
-  v4_cidr_blocks = ["172.17.4.0/22"]
-  zone           = "ru-central1-a"
+
+
+# Instances
+module "instances" {
+  source         = "./modules/instances"
+  instance_count = local.instances_instance_count[terraform.workspace]
+  name_prefix    = "vm-c"
+
+  subnet_id     = module.vpc.subnet_ids[0]
+  zone          = var.yc_region
+  folder_id     = module.vpc.folder_id
+  image         = "ubuntu-2004-lts"
+  platform_id   = local.instances_platform_id[terraform.workspace]
+  description   = "Demo count"
+  users         = "sysadmin"
+  cores         = local.instances_cores[terraform.workspace]
+  boot_disk     = local.instances_boot_disk[terraform.workspace]
+  disk_size     = local.instances_disk_size[terraform.workspace]
+  nat           = "true"
+  memory        = "2"
+  core_fraction = "100"
+  depends_on = [
+    module.vpc
+  ]
 }
 
-# VMs
-
-data "yandex_compute_image" "ubuntu" {
-  family = "ubuntu-2004-lts"
+module "instances_fe" {
+  source         = "./modules/instances_fe"
+  fe_name_prefix = "vm-fe-"
+  fe_count       = local.instances_instance_fe_count[terraform.workspace]
+  #  fe_names         = local.instances_instance_fe_names[terraform.workspace]
+  fe_subnet_id     = module.vpc.subnet_ids[0]
+  fe_zone          = var.yc_region
+  fe_folder_id     = module.vpc.folder_id
+  fe_image         = "ubuntu-2004-lts"
+  fe_platform_id   = local.instances_platform_id[terraform.workspace]
+  fe_description   = "Demo for_each"
+  fe_users         = "sysadmin"
+  fe_cores         = local.instances_cores[terraform.workspace]
+  fe_boot_disk     = local.instances_boot_disk[terraform.workspace]
+  fe_disk_size     = local.instances_disk_size[terraform.workspace]
+  fe_nat           = "true"
+  fe_memory        = "2"
+  fe_core_fraction = "100"
+  depends_on = [
+    module.vpc
+  ]
 }
 
-resource "yandex_compute_instance" "vm" {
-  name        = "ubu01"
-  hostname    = "ubu01.netology.test"
-  platform_id = "standard-v1"
-
-  resources {
-    cores         = 2
-    memory        = 2
-    core_fraction = 20
+# Local Vars
+locals {
+  instances_platform_id = {
+    stage = "standard-v1"
+    prod  = "standard-v2"
   }
-
-  boot_disk {
-    initialize_params {
-      image_id = data.yandex_compute_image.ubuntu.id
-      type     = "network-hdd"
-      size     = "10"
-    }
+  instances_cores = {
+    stage = 2
+    prod  = 2
   }
-
-  network_interface {
-    subnet_id = yandex_vpc_subnet.snet_172_17_4_0_22.id
-    nat       = true
-    ipv6      = false
+  instances_boot_disk = {
+    stage = "network-hdd"
+    prod  = "network-ssd"
   }
-
-  metadata = {
-    user-data = "${file("meta.txt")}"
+  instances_disk_size = {
+    stage = 10
+    prod  = 20
+  }
+  instances_instance_count = {
+    stage = 1
+    prod  = 2
+  }
+  instances_instance_fe_count = {
+    stage = 1
+    prod  = 2
+  }
+  #  instances_instance_fe_names = {
+  #    stage = ["vm-fe-01"]
+  #    prod = ["vm-fe-01", "vm-fe-02"]
+  #  }
+  vpc_subnets = {
+    stage = [
+      {
+        "v4_cidr_blocks" : [
+          "10.128.0.0/24"
+        ],
+        "zone" : var.yc_region
+      }
+    ]
+    prod = [
+      {
+        zone           = "ru-central1-a"
+        v4_cidr_blocks = ["10.128.0.0/24"]
+      },
+      {
+        zone           = "ru-central1-b"
+        v4_cidr_blocks = ["10.129.0.0/24"]
+      },
+      {
+        zone           = "ru-central1-c"
+        v4_cidr_blocks = ["10.130.0.0/24"]
+      }
+    ]
   }
 }
 
