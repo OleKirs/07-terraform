@@ -65,7 +65,7 @@ resource "yandex_compute_instance" "instance_fe" {
     ipv6      = var.fe_ipv6
   }
 
-#  metadata = {
-#    user-data = "${var.fe_users}:${file("./pub_keys/.ssh/id_rsa.pub")}"
-#  }
+  metadata = {
+    user-data = "${var.fe_users}:${file("./pub_keys/.ssh/id_rsa.pub")}"
+  }
 }

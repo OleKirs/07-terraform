@@ -1,14 +1,14 @@
-# 07-03
+# v0.03.07 [07-03]
 
 terraform {
-  cloud {
-    organization = "olekirs"
-
-    workspaces {
-      name = "stage"
+#  cloud {
+#    organization = "olekirs"
+#
+#    workspaces {
+#      name = "stage"
 #      name = "prod"
-    }
-  }
+#    }
+#  }
   # Moved to ./versions.tf
   #  required_providers {
   #    yandex = {
@@ -16,19 +16,19 @@ terraform {
   #    }
   #  }
 
-#  backend "s3" {
-#    endpoint = "storage.yandexcloud.net"
-#    bucket   = "olekirs-netology"
-#    region   = "ru-central1"
-#    key      = "terraform.tfstate"
-#
-#    # Used \"AWS_ACCESS_KEY_ID\" and \"AWS_SECRET_ACCESS_KEY\" in user ENV
-#    #    access_key = "<идентификатор статического ключа>"
-#    #    secret_key = "<секретный ключ>"
-#
-#    skip_region_validation      = true
-#    skip_credentials_validation = true
-#  }
+  backend "s3" {
+    endpoint = "storage.yandexcloud.net"
+    bucket   = "olekirs-netology"
+    region   = "ru-central1"
+    key      = "terraform.tfstate"
+
+    # Used \"AWS_ACCESS_KEY_ID\" and \"AWS_SECRET_ACCESS_KEY\" in user ENV
+    #    access_key = "<идентификатор статического ключа>"
+    #    secret_key = "<секретный ключ>"
+
+    skip_region_validation      = true
+    skip_credentials_validation = true
+  }
 
 }
 
